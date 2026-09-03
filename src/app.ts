@@ -8,6 +8,8 @@ import express, {
 } from "express";
 import httpStatus from "http-status";
 import config from "./app/config";
+import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
+import { notFound } from "./app/middleware/notFound";
 
 
 const app: Application = express();
@@ -25,23 +27,6 @@ app.use(express.json());
 app.use(cookieParser());
 
 
-// app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//         const grantIdTokenResult = await getBkashIdToken();
-
-//         console.log(grantIdTokenResult);
-
-//         res.status(httpStatus.OK).json({
-//             success: true,
-//             message: "Welcome to Civic Connect Backend",
-//             data: null,
-//         });
-//     } catch (error) {
-//         console.log(error);
-//         next(error);
-//     }
-// });
-
 app.get("/", async (req: Request, res: Response) => {
     res.status(httpStatus.OK).json({
         success: true,
@@ -49,7 +34,7 @@ app.get("/", async (req: Request, res: Response) => {
     });
 });
 
-// app.use(globalErrorHandler);
-// app.use(notFound);
+app.use(globalErrorHandler);
+app.use(notFound);
 
 export default app;
