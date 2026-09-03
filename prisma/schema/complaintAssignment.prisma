@@ -1,0 +1,13 @@
+model ComplaintAssignment {
+    id           String    @id @default(uuid())
+    complaintId  String
+    technicianId String
+    assignedAt   DateTime  @default(now())
+    completedAt  DateTime?
+    complaint    Complaint @relation(fields: [complaintId], references: [id])
+    technician   User      @relation(fields: [technicianId], references: [id])
+
+    @@index([complaintId])
+    @@index([technicianId])
+    @@map("complaint_assignments")
+}

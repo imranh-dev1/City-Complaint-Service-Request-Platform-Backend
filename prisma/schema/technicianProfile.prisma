@@ -1,0 +1,33 @@
+model TechnicianProfile {
+    id     String @id @default(uuid())
+    userId String @unique
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Professional Details
+    specialization String // e.g., "Plumbing", "Electrical", "HVAC"
+    experience     Int     @default(0) // In years
+    bio            String? @db.Text
+    rating         Float   @default(0.0)
+    totalJobs      Int     @default(0)
+
+    // Status & Availability
+    availability TechAvailability @default(AVAILABLE)
+    isVerified   Boolean          @default(false)
+
+    // Location & Metrics
+    serviceRadius Int    @default(10) // Coverage area in km/miles
+    hourlyRate    Float?
+
+    // Soft Delete Lifecycle (Matches your User design)
+    isDeleted Boolean   @default(false)
+    deletedAt DateTime?
+
+    // Timestamps
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+    @@index([specialization])
+    @@index([availability])
+    @@map("technician_profiles")
+}

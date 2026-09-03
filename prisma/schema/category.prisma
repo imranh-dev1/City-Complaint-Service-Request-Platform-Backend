@@ -1,0 +1,14 @@
+model Category {
+    id          String  @id @default(uuid())
+    name        String  @unique
+    description String?
+    isActive    Boolean @default(true)
+
+    complaints Complaint[]
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+
+    @@map("categories")
+}

@@ -1,0 +1,29 @@
+model User {
+    id                 String                @id @default(uuid())
+    name               String
+    email              String
+    password           String?
+    googleId           String?               @unique
+    authProvider       AuthProvider          @default(CREDENTIAL)
+    emailVerified      Boolean               @default(false)
+    role               Role                  @default(CITIZEN)
+    status             UserStatus            @default(ACTIVE)
+    needPasswordChange Boolean               @default(false)
+    imageUrl           String                @default("")
+    imagePublicId      String                @default("")
+    phone              String?
+    isDeleted          Boolean               @default(false)
+    deletedAt          DateTime?
+    complaints         Complaint[]
+    payments           Payment[]
+    feedbacks          Feedback[]
+    technician         TechnicianProfile?
+    assignments        ComplaintAssignment[]
+    createdAt          DateTime              @default(now())
+    updatedAt          DateTime              @updatedAt
+
+    @@index([email])
+    @@index([role])
+    @@index([status])
+    @@map("users")
+}

@@ -1,0 +1,55 @@
+enum Role {
+    SUPER_ADMIN
+    ADMIN
+    CITIZEN
+    TECHNICIAN
+}
+
+enum UserStatus {
+    ACTIVE
+    BLOCKED
+    DELETED
+}
+
+enum Gender {
+    MALE
+    FEMALE
+    OTHER
+}
+
+enum AuthProvider {
+    GOOGLE
+    CREDENTIAL
+}
+
+enum PaymentStatus {
+    PENDING
+    PAID
+    FAILED
+    CANCELLED
+    REFUNDED
+}
+
+enum ComplaintStatus {
+    SUBMITTED
+    UNDER_REVIEW
+    ASSIGNED
+    IN_PROGRESS
+    RESOLVED
+    CLOSED
+    REJECTED
+    CANCELLED
+}
+
+enum Priority {
+    LOW
+    MEDIUM
+    HIGH
+    URGENT
+}
+
+enum TechAvailability {
+    AVAILABLE
+    BUSY
+    OFFLINE
+}
