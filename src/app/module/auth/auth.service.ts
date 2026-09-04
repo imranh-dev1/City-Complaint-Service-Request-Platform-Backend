@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import httpStatus from "http-status";
-import { IEmailVerifyPayload, IUserRegisterPayload } from "./auth.interface";
+import { IEmailVerifyPayload, ILoginUserPayload, IUserRegisterPayload } from "./auth.interface";
 import { AppError } from "../../utils/AppError";
 import config from "../../config";
 import { prisma } from "../../lib/prisma";
@@ -139,7 +139,7 @@ const registerCitizenVerification = async (payload: IEmailVerifyPayload) => {
 
     await sendEmail({
         to: citizenPayload.email,
-        subject: "Welcome to PH Healthcare!",
+        subject: "Welcome to //#endregion City Complaint & Service Request Platform",
         template: "registration-success",
         data: {
             name: citizenPayload.name,
@@ -176,8 +176,63 @@ const registerCitizenVerification = async (payload: IEmailVerifyPayload) => {
     };
 };
 
+const loginUser = async (payload: ILoginUserPayload) => {
+    const { password } = payload;
+    const email = payload.email.trim().toLowerCase();
+
+    const user = await prisma.user.findUnique({
+        where: { email },
+    });
+
+    if (!user) {
+        throw new AppError(404, "User not found");
+    }
+
+    if (user.status === UserStatus.BLOCKED) {
+        throw new AppError(403, "User is blocked");
+    }
+
+    if (user.isDeleted || user.status === UserStatus.DELETED) {
+        throw new AppError(404, "User is deleted");
+    }
+
+    if (user.password === null && user.googleId !== null) {
+        throw new AppError(400, "User Already Has Account Registerd with Google, try to login with google.",);
+    }
+
+    const isPasswordMatched = await bcrypt.compare(password, user.password as string,);
+
+    if (!isPasswordMatched) {
+        throw new AppError(401, "Invalid credentials");
+    }
+
+    const jwtPayload = {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+    };
+
+    const accessToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_access_secret,
+        config.jwt_access_expires_in as SignOptions,
+    );
+
+    const refreshToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_refresh_secret,
+        config.jwt_refresh_expires_in as SignOptions,
+    );
+
+    return {
+        accessToken,
+        refreshToken,
+    };
+};
 
 export const AuthService = {
     registerUser,
-    registerCitizenVerification
+    registerCitizenVerification,
+    loginUser
 };

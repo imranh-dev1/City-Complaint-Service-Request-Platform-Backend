@@ -5,8 +5,10 @@ import { UserValidations } from "./auth.validation";
 
 const router = Router();
 
-router.post("/register", validateRequest(UserValidations.createUserValidationSchema), AuthController.registerCitizen)
+router.post("/register", validateRequest(UserValidations.createUserValidationSchema), AuthController.registerCitizen);
 
 router.post("/register-email-verify", validateRequest(UserValidations.verifyEmailValidationSchema), AuthController.registerEmailVerification);
+
+router.post("/login", validateRequest(UserValidations.loginValidationSchema), AuthController.loginUser);
 
 export const AuthRoutes = router;

@@ -77,8 +77,19 @@ export const verifyEmailValidationSchema = z.object({
         .regex(/^\d+$/, "Verification code must contain only numbers"),
 });
 
+export const loginValidationSchema = z.object({
+    email: z.string({
+        message: "Email is required",
+    }).email("Invalid email format"),
+
+    password: z.string({
+        message: "Password is required",
+    }).min(6, "Password must be at least 6 characters long"),
+});
+
 export const UserValidations = {
     createUserValidationSchema,
     updateUserValidationSchema,
-    verifyEmailValidationSchema
+    verifyEmailValidationSchema,
+    loginValidationSchema
 };

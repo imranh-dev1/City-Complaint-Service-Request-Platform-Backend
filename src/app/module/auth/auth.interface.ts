@@ -26,6 +26,11 @@ export interface IUserRegisterPayload {
     citizen?: ICitizenProfile;
 }
 
+export interface ILoginUserPayload {
+    email: string;
+    password: string;
+}
+
 export interface IEmailVerifyPayload {
     email: string;
     otp: string;
