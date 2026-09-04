@@ -91,11 +91,22 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
     }
 
     const result = await AuthService.getMe(user);
-    
+
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
         message: "User profile fetched successfully",
+        data: result,
+    });
+});
+
+const googleLogin = catchAsync(async (req: Request, res: Response) => {
+    const result = await AuthService.googleLogin(req.body);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User logged in successfully",
         data: result,
     });
 });
@@ -105,4 +116,5 @@ export const AuthController = {
     registerEmailVerification,
     loginUser,
     getMe,
+    googleLogin,
 }  

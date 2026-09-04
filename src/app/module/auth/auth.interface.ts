@@ -38,6 +38,10 @@ export interface IRequestUser {
     role: Role;
 }
 
+export interface IGoogleLoginPayload {
+    idToken: string;
+}
+
 export interface IEmailVerifyPayload {
     email: string;
     otp: string;

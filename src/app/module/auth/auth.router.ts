@@ -15,4 +15,6 @@ router.post("/login", validateRequest(UserValidations.loginValidationSchema), Au
 
 router.get("/me", auth(Role.ADMIN, Role.CITIZEN, Role.SUPER_ADMIN, Role.TECHNICIAN), AuthController.getMe);
 
+router.post("/google", AuthController.googleLogin);
+
 export const AuthRoutes = router;

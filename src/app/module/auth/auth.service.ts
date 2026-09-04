@@ -1,15 +1,17 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import httpStatus from "http-status";
-import { IEmailVerifyPayload, ILoginUserPayload, IRequestUser, IUserRegisterPayload } from "./auth.interface";
+import { IEmailVerifyPayload, IGoogleLoginPayload, ILoginUserPayload, IRequestUser, IUserRegisterPayload } from "./auth.interface";
 import { AppError } from "../../utils/AppError";
 import config from "../../config";
 import { prisma } from "../../lib/prisma";
 import { redisClient } from "../../lib/redis";
 import sendEmail from "../../utils/sendEmail";
-import { Role, UserStatus } from "../../../generated/prisma/enums";
+import { AuthProvider, Role, UserStatus } from "../../../generated/prisma/enums";
 import { jwtUtils } from "../../utils/jwt";
 import { SignOptions } from "jsonwebtoken";
+import { TokenPayload } from "google-auth-library";
+import { googleClient } from "../../lib/googleAuth";
 
 const registerUser = async (payload: IUserRegisterPayload) => {
     const { name, email: rawEmail, password, phone } = payload;
@@ -251,9 +253,147 @@ const getMe = async (user: IRequestUser) => {
     return isUserExists;
 };
 
+const googleLogin = async (payload: IGoogleLoginPayload) => {
+    let googleIdTokenPayload: TokenPayload | null | undefined = null;
+    try {
+        const tiket = await googleClient.verifyIdToken({
+            idToken: payload.idToken,
+            audience: config.google_client_id,
+        });
+
+        googleIdTokenPayload = tiket.getPayload();
+    } catch (error) {
+        console.log("Google id Token Verification Faild", error);
+        throw new AppError(401, "Invalid or Expired Google Id Token");
+    }
+
+    if (!googleIdTokenPayload) {
+        throw new AppError(401, "Invalid or Expired Google Id Token");
+    }
+
+    if (!googleIdTokenPayload.email) {
+        throw new AppError(400, "Google email not found");
+    }
+
+    if (!googleIdTokenPayload.name) {
+        throw new AppError(400, "Google email User name not found");
+    }
+
+    const ifPatientExsitWithGoogleAuth = await prisma.user.findUnique({
+        where: {
+            email: googleIdTokenPayload.email,
+            role: Role.CITIZEN,
+            googleId: googleIdTokenPayload.sub,
+        },
+    });
+
+    let user = ifPatientExsitWithGoogleAuth;
+
+    if (!ifPatientExsitWithGoogleAuth) {
+        const ifPatientExistWithCredentials = await prisma.user.findUnique({
+            where: {
+                email: googleIdTokenPayload.email,
+                role: Role.CITIZEN,
+                authProvider: AuthProvider.CREDENTIAL,
+            },
+        });
+
+        if (ifPatientExistWithCredentials) {
+            if (!ifPatientExistWithCredentials.emailVerified) {
+                throw new AppError(400, "User Email not verified");
+            }
+
+            if (ifPatientExistWithCredentials.status === UserStatus.BLOCKED) {
+                throw new AppError(403, "User is Blocked");
+            }
+
+            if (
+                ifPatientExistWithCredentials.isDeleted ||
+                ifPatientExistWithCredentials.status === UserStatus.DELETED
+            ) {
+                throw new AppError(404, "User is Deleted");
+            }
+
+            user = await prisma.user.update({
+                where: {
+                    id: ifPatientExistWithCredentials.id,
+                },
+                data: {
+                    googleId: googleIdTokenPayload.sub,
+                },
+            });
+        } else {
+            user = await prisma.user.create({
+                data: {
+                    name: googleIdTokenPayload.name,
+                    email: googleIdTokenPayload.email,
+                    role: Role.CITIZEN,
+                    googleId: googleIdTokenPayload.sub,
+                    authProvider: AuthProvider.GOOGLE,
+                    emailVerified: true,
+                    citizen: {
+                        create: {
+                            address: "",
+                            wardNo: "",
+                            area: "",
+                            nid: null,
+                        },
+                    },
+                },
+            });
+            await sendEmail({
+                to: user.email,
+                subject: "Welcome to City Complaint & Service Request Platform",
+                template: "welcome",
+                data: {
+                    name: user.name,
+                    email: user.email,
+                },
+            });
+        }
+    }
+
+    if (!user) {
+        throw new AppError(404, "User Not Found");
+    }
+
+    if (user.status === UserStatus.BLOCKED) {
+        throw new AppError(403, "User is Blocked");
+    }
+
+    if (user.isDeleted || user.status === UserStatus.DELETED) {
+        throw new AppError(404, "User is Deleted");
+    }
+
+    const jwtPayload = {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+    };
+
+    const accessToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_access_secret,
+        config.jwt_access_expires_in as SignOptions,
+    );
+
+    const refreshToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_refresh_secret,
+        config.jwt_refresh_expires_in as SignOptions,
+    );
+
+    return {
+        accessToken,
+        refreshToken,
+    };
+};
+
 export const AuthService = {
     registerUser,
     registerCitizenVerification,
     loginUser,
-    getMe
+    getMe,
+    googleLogin,
 };
