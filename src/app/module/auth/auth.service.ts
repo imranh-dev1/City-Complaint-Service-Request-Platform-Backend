@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import httpStatus from "http-status";
-import { IEmailVerifyPayload, ILoginUserPayload, IUserRegisterPayload } from "./auth.interface";
+import { IEmailVerifyPayload, ILoginUserPayload, IRequestUser, IUserRegisterPayload } from "./auth.interface";
 import { AppError } from "../../utils/AppError";
 import config from "../../config";
 import { prisma } from "../../lib/prisma";
@@ -231,8 +231,29 @@ const loginUser = async (payload: ILoginUserPayload) => {
     };
 };
 
+const getMe = async (user: IRequestUser) => {
+    const isUserExists = await prisma.user.findUnique({
+        where: {
+            id: user.userId,
+        },
+        include: {
+            citizen: true,
+        },
+        omit: {
+            password: true,
+        },
+    });
+
+    if (!isUserExists) {
+        throw new AppError(404, "User not found");
+    }
+
+    return isUserExists;
+};
+
 export const AuthService = {
     registerUser,
     registerCitizenVerification,
-    loginUser
+    loginUser,
+    getMe
 };

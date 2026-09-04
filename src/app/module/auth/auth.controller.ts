@@ -3,6 +3,8 @@ import { catchAsync } from "../../utils/catchAsync";
 import { AuthService } from "./auth.service";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status";
+import { AppError } from "../../utils/AppError";
+import { IRequestUser } from "./auth.interface";
 
 const registerCitizen = catchAsync(async (req: Request, res: Response) => {
 
@@ -81,8 +83,26 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const getMe = catchAsync(async (req: Request, res: Response) => {
+    const user = req.user as unknown as IRequestUser;
+
+    if (!user) {
+        throw new AppError(400, "User information is missing in the request");
+    }
+
+    const result = await AuthService.getMe(user);
+    
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User profile fetched successfully",
+        data: result,
+    });
+});
+
 export const AuthController = {
     registerCitizen,
     registerEmailVerification,
-    loginUser
+    loginUser,
+    getMe,
 }  
