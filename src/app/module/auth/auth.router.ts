@@ -17,4 +17,6 @@ router.get("/me", auth(Role.ADMIN, Role.CITIZEN, Role.SUPER_ADMIN, Role.TECHNICI
 
 router.post("/google", AuthController.googleLogin);
 
+router.post("/refresh-token", AuthController.refreshToken);
+
 export const AuthRoutes = router;
