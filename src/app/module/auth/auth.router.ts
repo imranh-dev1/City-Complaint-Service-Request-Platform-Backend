@@ -23,4 +23,6 @@ router.post("/forgot-password", validateRequest(UserValidations.forgotPasswordZo
 
 router.post("/reset-password", validateRequest(UserValidations.resetPasswordZodSchema), AuthController.resetPassword);
 
+router.post("/logout", auth(Role.ADMIN, Role.CITIZEN, Role.SUPER_ADMIN, Role.TECHNICIAN), AuthController.logoutUser);
+
 export const AuthRoutes = router;

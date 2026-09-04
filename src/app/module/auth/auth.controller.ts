@@ -5,6 +5,7 @@ import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { AppError } from "../../utils/AppError";
 import { IRequestUser } from "./auth.interface";
+import config from "../../config";
 
 const registerCitizen = catchAsync(async (req: Request, res: Response) => {
 
@@ -168,6 +169,27 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const logoutUser = catchAsync(async (req: Request, res: Response) => {
+    res.clearCookie("accessToken", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "none",
+    });
+
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "none",
+    });
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User logged out successfully",
+        data: null,
+    });
+});
+
 export const AuthController = {
     registerCitizen,
     registerEmailVerification,
@@ -176,5 +198,6 @@ export const AuthController = {
     googleLogin,
     refreshToken,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    logoutUser
 }  
