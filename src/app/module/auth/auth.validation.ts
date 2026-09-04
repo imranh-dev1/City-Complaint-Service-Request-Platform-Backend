@@ -87,9 +87,32 @@ export const loginValidationSchema = z.object({
     }).min(6, "Password must be at least 6 characters long"),
 });
 
+const forgotPasswordZodSchema = z.object({
+    email: z
+        .string()
+        .trim()
+        .toLowerCase()
+        .email("Please provide a valid email address"),
+});
+
+const resetPasswordZodSchema = z.object({
+    email: z
+        .string()
+        .trim()
+        .toLowerCase()
+        .email("Please provide a valid email address"),
+    newPassword: z
+        .string()
+        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+            "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character"),
+    otp: z.string().length(6)
+});
+
 export const UserValidations = {
     createUserValidationSchema,
     updateUserValidationSchema,
     verifyEmailValidationSchema,
-    loginValidationSchema
+    loginValidationSchema,
+    forgotPasswordZodSchema,
+    resetPasswordZodSchema
 };

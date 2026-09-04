@@ -142,7 +142,31 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+    const payload = req.body;
 
+    await AuthService.forgotPassword(payload)
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `User Password Forgot successfully, This email, ${payload.email}`,
+        data: null,
+    });
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+    const payload = req.body;
+
+    await AuthService.resetPassword(payload)
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User Password reset successfully..",
+        data: null,
+    });
+});
 
 export const AuthController = {
     registerCitizen,
@@ -150,5 +174,7 @@ export const AuthController = {
     loginUser,
     getMe,
     googleLogin,
-    refreshToken
+    refreshToken,
+    forgotPassword,
+    resetPassword
 }  
