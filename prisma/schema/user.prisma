@@ -1,7 +1,7 @@
 model User {
     id                 String                @id @default(uuid())
     name               String
-    email              String
+    email              String                @unique
     password           String?
     googleId           String?               @unique
     authProvider       AuthProvider          @default(CREDENTIAL)
@@ -17,7 +17,8 @@ model User {
     complaints         Complaint[]
     payments           Payment[]
     feedbacks          Feedback[]
-    technician         TechnicianProfile?
+    technician         Technician?
+    citizen            Citizen?
     assignments        ComplaintAssignment[]
     createdAt          DateTime              @default(now())
     updatedAt          DateTime              @updatedAt

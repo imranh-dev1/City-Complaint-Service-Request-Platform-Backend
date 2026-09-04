@@ -1,13 +1,15 @@
 import crypto from "crypto";
-import { Role } from "../../../generated/prisma/enums";
 import bcrypt from "bcryptjs";
 import httpStatus from "http-status";
-import { IUserRegisterPayload } from "./auth.interface";
+import { IEmailVerifyPayload, IUserRegisterPayload } from "./auth.interface";
 import { AppError } from "../../utils/AppError";
 import config from "../../config";
 import { prisma } from "../../lib/prisma";
 import { redisClient } from "../../lib/redis";
 import sendEmail from "../../utils/sendEmail";
+import { Role, UserStatus } from "../../../generated/prisma/enums";
+import { jwtUtils } from "../../utils/jwt";
+import { SignOptions } from "jsonwebtoken";
 
 const registerUser = async (payload: IUserRegisterPayload) => {
     const { name, email: rawEmail, password, phone } = payload;
@@ -68,6 +70,114 @@ const registerUser = async (payload: IUserRegisterPayload) => {
     };
 };
 
+const registerCitizenVerification = async (payload: IEmailVerifyPayload) => {
+    const email = payload.email.trim().toLowerCase();
+    const otp = payload.otp;
+
+    const isUserExists = await prisma.user.findUnique({
+        where: { email },
+    });
+
+    if (isUserExists) {
+        throw new AppError(httpStatus.CONFLICT, "User with this email already exists.");
+    }
+
+    const otpKey = `citizen-registration-otp:${email}`;
+
+    const storedOtp = await redisClient.get(otpKey);
+
+    if (!storedOtp) {
+        throw new AppError(httpStatus.BAD_REQUEST, "OTP has expired. Please register again.");
+    }
+
+    if (storedOtp !== otp) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Invalid OTP.");
+    }
+
+    const citizenRegistrationKey = `citizen-registration-data:${email}`;
+
+    const storedUserData = await redisClient.get(citizenRegistrationKey);
+
+    if (!storedUserData) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Registration data has expired. Please register again.");
+    }
+
+    const redisUserDataPayload = JSON.parse(storedUserData);
+
+    const citizenPayload: IUserRegisterPayload = redisUserDataPayload;
+
+    const createdUser = await prisma.user.create({
+        data: {
+            name: citizenPayload.name,
+            email: citizenPayload.email,
+            password: citizenPayload.password,
+            role: Role.CITIZEN,
+            status: UserStatus.ACTIVE,
+            emailVerified: true,
+            citizen: {
+                create: {
+                    address: citizenPayload.citizen?.address,
+                    wardNo: citizenPayload.citizen?.wardNo,
+                    area: citizenPayload.citizen?.area,
+                },
+            },
+        },
+
+        omit: {
+            password: true,
+        },
+
+        include: {
+            citizen: true,
+        },
+    });
+
+    await redisClient.del([
+        otpKey,
+        citizenRegistrationKey,
+    ]);
+
+    await sendEmail({
+        to: citizenPayload.email,
+        subject: "Welcome to PH Healthcare!",
+        template: "registration-success",
+        data: {
+            name: citizenPayload.name,
+            email: citizenPayload.email,
+        },
+    });
+
+    const { citizen: createdCitizen, ...user } = createdUser;
+
+    const jwtPayload = {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+    };
+
+    const accessToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_access_secret,
+        config.jwt_access_expires_in as SignOptions,
+    );
+
+    const refreshToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_refresh_secret,
+        config.jwt_refresh_expires_in as SignOptions,
+    );
+
+    return {
+        user,
+        citizen: createdCitizen,
+        accessToken,
+        refreshToken,
+    };
+};
+
+
 export const AuthService = {
     registerUser,
+    registerCitizenVerification
 };

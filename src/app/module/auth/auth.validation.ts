@@ -65,7 +65,20 @@ export const updateUserValidationSchema = z.object({
     deletedAt: z.date().optional().nullable(),
 });
 
+export const verifyEmailValidationSchema = z.object({
+    email: z.string({
+        message: "Email is required",
+    }).email("Invalid email format"),
+
+    otp: z.string({
+        message: "Verification code is required",
+    })
+        .length(6, "Verification code must be exactly 6 digits long")
+        .regex(/^\d+$/, "Verification code must contain only numbers"),
+});
+
 export const UserValidations = {
     createUserValidationSchema,
     updateUserValidationSchema,
+    verifyEmailValidationSchema
 };

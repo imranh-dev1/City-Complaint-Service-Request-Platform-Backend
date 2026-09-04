@@ -1,5 +1,12 @@
 import { AuthProvider, Role, UserStatus } from "../../../generated/prisma/enums";
 
+export interface ICitizenProfile {
+    nid?: string;
+    address?: string;
+    wardNo?: string;
+    area?: string;
+}
+
 export interface IUserRegisterPayload {
     name: string;
     email: string;
@@ -15,4 +22,11 @@ export interface IUserRegisterPayload {
     phone?: string | null;
     isDeleted?: boolean;
     deletedAt?: Date | null;
+
+    citizen?: ICitizenProfile;
+}
+
+export interface IEmailVerifyPayload {
+    email: string;
+    otp: string;
 }

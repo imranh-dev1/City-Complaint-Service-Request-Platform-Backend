@@ -1,4 +1,4 @@
-model TechnicianProfile {
+model Technician {
     id     String @id @default(uuid())
     userId String @unique
     user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -29,5 +29,5 @@ model TechnicianProfile {
     @@index([userId])
     @@index([specialization])
     @@index([availability])
-    @@map("technician_profiles")
+    @@map("technicians")
 }
