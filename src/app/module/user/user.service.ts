@@ -1,0 +1,57 @@
+import { UploadApiResponse } from "cloudinary"
+import { prisma } from "../../lib/prisma"
+import { AppError } from "../../utils/AppError"
+import { cloudinary } from "../../lib/cloudinary"
+
+const profileImageUpload = async (buffer: Buffer, userId: string) => {
+
+    const currentUser = await prisma.user.findUnique({
+        where: {
+            id: userId,
+        },
+        select: {
+            imagePublicId: true,
+            imageUrl: true
+        }
+    })
+
+    const cloudinaryResult = await new Promise<UploadApiResponse>((resolve, reject) => {
+        cloudinary.uploader.upload_stream({ resource_type: "auto" },
+            async (error, result) => {
+                if (error) {
+                    return reject(error)
+                }
+
+                if (!result) {
+                    return reject(new AppError(502, "No Result form Cloudanry"))
+                }
+
+                resolve(result)
+            }
+        ).end(buffer)
+    })
+
+    const updateUserProfileImage = await prisma.user.update({
+        where: {
+            id: userId
+        },
+        data: {
+            imagePublicId: cloudinaryResult?.public_id,
+            imageUrl: cloudinaryResult?.secure_url
+        },
+        omit: {
+            password: true
+        }
+    })
+
+    if (currentUser?.imagePublicId && currentUser.imageUrl) {
+        await cloudinary.uploader.destroy(currentUser.imagePublicId)
+    }
+
+    return updateUserProfileImage;
+}
+
+
+export const UserServices = {
+    profileImageUpload
+}
